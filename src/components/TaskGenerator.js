@@ -1,6 +1,19 @@
-// File: /src/components/TaskGenerator.js
 import React, { useState } from "react";
-import { TextField, Button, List, ListItem, Checkbox, ListItemText, Box, CircularProgress, Typography } from "@mui/material";
+import {
+  TextField,
+  Button,
+  List,
+  ListItem,
+  Checkbox,
+  ListItemText,
+  Box,
+  CircularProgress,
+  Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
+} from "@mui/material";
 import { generateTasks } from "../utils/openrouterApi";
 
 const TaskGenerator = ({ onAddTasks }) => {
@@ -9,21 +22,31 @@ const TaskGenerator = ({ onAddTasks }) => {
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [open, setOpen] = useState(false);
+
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => {
+    setGeneratedTasks([]);
+    setSelectedTasks([]);
+    setPrompt("");
+    setOpen(false);
+  };
 
   const handleGenerate = async () => {
     setLoading(true);
     setError(null);
-    const tasks = await generateTasks(prompt);
-    if (tasks.length === 0) {
-      setError("Não foram geradas tarefas. Tenta novamente.");
+    try {
+      const tasks = await generateTasks(prompt);
+      setGeneratedTasks(tasks);
+    } catch (err) {
+      setError("Erro ao gerar tarefas. Tenta novamente.");
     }
-    setGeneratedTasks(tasks);
     setLoading(false);
   };
 
   const toggleTaskSelection = (task) => {
     if (selectedTasks.includes(task)) {
-      setSelectedTasks(selectedTasks.filter(t => t !== task));
+      setSelectedTasks(selectedTasks.filter((t) => t !== task));
     } else {
       setSelectedTasks([...selectedTasks, task]);
     }
@@ -31,42 +54,51 @@ const TaskGenerator = ({ onAddTasks }) => {
 
   const handleConfirm = () => {
     onAddTasks(selectedTasks);
-    // Reseta os estados
-    setGeneratedTasks([]);
-    setSelectedTasks([]);
-    setPrompt("");
+    handleClose();
   };
 
   return (
     <Box sx={{ mt: 2 }}>
-      <TextField
-        label="Prompt para gerar tarefas"
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        fullWidth
-        multiline
-      />
-      <Button onClick={handleGenerate} variant="contained" sx={{ mt: 1 }}>
-        Gerar Tarefas
+      <Button variant="contained" onClick={handleOpen}>
+        Gerar Tarefas com AI
       </Button>
-      {loading && <CircularProgress sx={{ mt: 2 }} />}
-      {error && <Typography color="error" sx={{ mt: 2 }}>{error}</Typography>}
-      {generatedTasks.length > 0 && (
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="h6">Tarefas geradas:</Typography>
-          <List>
-            {generatedTasks.map((task, index) => (
-              <ListItem key={index} button onClick={() => toggleTaskSelection(task)}>
-                <Checkbox checked={selectedTasks.includes(task)} />
-                <ListItemText primary={task} />
-              </ListItem>
-            ))}
-          </List>
-          <Button onClick={handleConfirm} variant="contained" sx={{ mt: 1 }}>
+
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+        <DialogTitle>Gerar Tarefas com AI</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Tema das Tarefas"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            fullWidth
+            multiline
+          />
+          <Button onClick={handleGenerate} variant="contained" sx={{ mt: 2 }} disabled={!prompt.trim()}>
+            Gerar
+          </Button>
+
+          {loading && <CircularProgress sx={{ mt: 2 }} />}
+          {error && <Typography color="error" sx={{ mt: 2 }}>{error}</Typography>}
+
+          {generatedTasks.length > 0 && (
+            <List sx={{ mt: 2 }}>
+              {generatedTasks.map((task, index) => (
+                <ListItem key={index} button onClick={() => toggleTaskSelection(task)}>
+                  <Checkbox checked={selectedTasks.includes(task)} />
+                  <ListItemText primary={task} />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={handleClose}>Cancelar</Button>
+          <Button onClick={handleConfirm} variant="contained" disabled={selectedTasks.length === 0}>
             Adicionar Tarefas Selecionadas
           </Button>
-        </Box>
-      )}
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

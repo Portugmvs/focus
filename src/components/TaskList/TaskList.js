@@ -14,7 +14,8 @@ import {
   Slide
 } from '@mui/material';
 import { Add, CheckCircle, Edit, Task } from '@mui/icons-material';
-import TaskManagementDialog from './TaskManagementDialog';
+import TaskManagementDialog from './TaskManagementDialog.js';
+
 
 const TaskList = ({ tasks, setTasks, onTaskComplete }) => {
   const [newTask, setNewTask] = useState('');
