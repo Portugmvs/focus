@@ -14,7 +14,7 @@ import {
   DialogContent,
   DialogActions
 } from "@mui/material";
-import { generateTasks } from "../utils/openrouterApi";
+import { generateTasks } from "../../utils/openrouterApi";
 
 const TaskGenerator = ({ onAddTasks }) => {
   const [prompt, setPrompt] = useState("");

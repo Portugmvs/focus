@@ -5,10 +5,10 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { Brightness4, Brightness7, School } from '@mui/icons-material';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { HistoryProvider } from './contexts/HistoryContext';
-import TaskList from './components/TaskList/TaskList';
+import TaskList from './components/Tasklist/TaskList';
 import PomodoroTimer from './components/PomodoroTimer/PomodoroTimer';
 import XPSystem from './components/XPSystem/XPSystem';
-import TaskGenerator from './components/TaskGenerator';
+import TaskGenerator from './components/TaskList/TaskGenerator';
 import { v4 as uuidv4 } from 'uuid';
 
 const themeCreator = (mode) => ({
