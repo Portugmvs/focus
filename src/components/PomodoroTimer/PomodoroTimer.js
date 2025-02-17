@@ -1,5 +1,5 @@
 // File: /src/components/PomodoroTimer/PomodoroTimer.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Box, Typography, Button, Slider, IconButton, CircularProgress } from '@mui/material';
 import { PlayArrow, Pause, Replay } from '@mui/icons-material';
@@ -13,13 +13,11 @@ const PomodoroTimer = ({ onTimerComplete }) => {
 
   const formatTime = (time) => String(time).padStart(2, '0');
   
-  const resetTimer = useCallback(() => {
+  const resetTimer = () => {
     setIsActive(false);
-    setMode('work');
-    setMinutes(25);
     setSeconds(0);
     setTimeElapsed(0);
-  }, []);
+  };
 
   useEffect(() => {
     let interval;
@@ -31,7 +29,11 @@ const PomodoroTimer = ({ onTimerComplete }) => {
             if (minutes === 0) {
               const totalMinutes = mode === 'work' ? 25 : 5;
               onTimerComplete(totalMinutes);
-              resetTimer();
+              // Reinicia o timer com os valores do modo actual
+              setMinutes(mode === 'work' ? 25 : 5);
+              setSeconds(0);
+              setTimeElapsed(0);
+              setIsActive(false);
               return 0;
             }
             setMinutes(prevMin => prevMin - 1);
@@ -42,12 +44,19 @@ const PomodoroTimer = ({ onTimerComplete }) => {
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isActive, minutes, seconds, mode, resetTimer, onTimerComplete]);
+  }, [isActive, minutes, mode, onTimerComplete]);
 
   const toggleMode = () => {
-    setMode(prev => prev === 'work' ? 'break' : 'work');
-    setMinutes(prev => prev === 25 ? 5 : 25);
-    resetTimer();
+    if (mode === 'work') {
+      setMode('break');
+      setMinutes(5);
+    } else {
+      setMode('work');
+      setMinutes(25);
+    }
+    setSeconds(0);
+    setTimeElapsed(0);
+    setIsActive(false);
   };
 
   return (
@@ -94,16 +103,24 @@ const PomodoroTimer = ({ onTimerComplete }) => {
           {isActive ? 'Pausar' : 'Iniciar'}
         </Button>
         
-        <IconButton onClick={resetTimer} aria-label="Reiniciar timer">
+        <IconButton onClick={() => {
+          setMinutes(mode === 'work' ? 25 : 5);
+          resetTimer();
+        }} aria-label="Reiniciar timer">
           <Replay />
         </IconButton>
       </Box>
 
       <Slider
-        value={mode === 'work' ? 25 : 5}
+        value={minutes}
         min={1}
         max={60}
-        onChange={(e, value) => setMinutes(value)}
+        onChange={(e, value) => {
+          setMinutes(value);
+          setSeconds(0);
+          setTimeElapsed(0);
+          setIsActive(false);
+        }}
         sx={{ width: '80%', mx: 'auto' }}
       />
     </Box>

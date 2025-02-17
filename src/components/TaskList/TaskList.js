@@ -5,17 +5,15 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   Box,
   TextField,
-  Button,
   List,
   ListItem,
   ListItemText,
   Checkbox,
   Typography,
   IconButton,
-  Slide,
-  Fade
+  Slide
 } from '@mui/material';
-import { Add, Delete, CheckCircle, Edit } from '@mui/icons-material';
+import { Add, CheckCircle, Edit, Task } from '@mui/icons-material';
 import TaskManagementDialog from './TaskManagementDialog';
 
 const TaskList = ({ tasks, setTasks, onTaskComplete }) => {
@@ -25,21 +23,31 @@ const TaskList = ({ tasks, setTasks, onTaskComplete }) => {
 
   const handleAddTask = () => {
     if (newTask.trim()) {
-      setTasks([...tasks, {
-        id: uuidv4(),
-        text: newTask.trim(),
-        completed: false,
-        createdAt: new Date().toISOString()
-      }]);
+      setTasks([
+        ...tasks,
+        {
+          id: uuidv4(),
+          text: newTask.trim(),
+          completed: false,
+          createdAt: new Date().toISOString()
+        }
+      ]);
       setNewTask('');
     }
   };
 
+  // Só marca como concluída se ainda não estiver concluída
+  // Não permite reverter de concluída para não concluída
   const toggleTask = (taskId) => {
-    const updatedTasks = tasks.map(task => {
+    const updatedTasks = tasks.map((task) => {
       if (task.id === taskId) {
-        if (!task.completed) onTaskComplete();
-        return { ...task, completed: !task.completed };
+        // Se a tarefa não estiver concluída, marca como concluída e dá XP
+        if (!task.completed) {
+          onTaskComplete();
+          return { ...task, completed: true };
+        }
+        // Se já estiver concluída, não faz nada
+        return task;
       }
       return task;
     });
@@ -52,16 +60,19 @@ const TaskList = ({ tasks, setTasks, onTaskComplete }) => {
   };
 
   const saveEdit = () => {
-    setTasks(tasks.map(task => 
-      task.id === editingId ? { ...task, text: editText } : task
-    ));
+    setTasks(
+      tasks.map((task) =>
+        task.id === editingId ? { ...task, text: editText } : task
+      )
+    );
     setEditingId(null);
   };
 
   return (
     <Box>
       <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Task /> Tarefas ({tasks.filter(t => !t.completed).length} pendentes)
+        <Task />
+        Tarefas ({tasks.filter((t) => !t.completed).length} pendentes)
       </Typography>
 
       <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
@@ -72,29 +83,20 @@ const TaskList = ({ tasks, setTasks, onTaskComplete }) => {
           value={newTask}
           onChange={(e) => setNewTask(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
-          InputProps={{
-            endAdornment: (
-              <IconButton
-                onClick={handleAddTask}
-                disabled={!newTask.trim()}
-                aria-label="Adicionar tarefa"
-              >
-                <Add />
-              </IconButton>
-            )
-          }}
         />
+        <IconButton
+          onClick={handleAddTask}
+          disabled={!newTask.trim()}
+          aria-label="Adicionar tarefa"
+        >
+          <Add />
+        </IconButton>
       </Box>
 
       <List sx={{ maxHeight: '60vh', overflow: 'auto' }}>
         {tasks.map((task) => (
           <Slide key={task.id} direction="right" in mountOnEnter unmountOnExit>
             <ListItem
-              secondaryAction={
-                <IconButton onClick={() => startEditing(task)} aria-label="Editar tarefa">
-                  <Edit fontSize="small" />
-                </IconButton>
-              }
               sx={{
                 bgcolor: task.completed ? 'action.selected' : 'background.paper',
                 mb: 1,
@@ -107,8 +109,10 @@ const TaskList = ({ tasks, setTasks, onTaskComplete }) => {
                 onChange={() => toggleTask(task.id)}
                 icon={<CheckCircle color="disabled" />}
                 checkedIcon={<CheckCircle color="success" />}
+                // Desactiva o checkbox se a tarefa já estiver concluída
+                disabled={task.completed}
               />
-              
+
               {editingId === task.id ? (
                 <TextField
                   fullWidth
@@ -127,15 +131,19 @@ const TaskList = ({ tasks, setTasks, onTaskComplete }) => {
                   }}
                 />
               )}
+
+              {/* Só exibe o ícone de edição se a tarefa não estiver concluída */}
+              {!task.completed && (
+                <IconButton onClick={() => startEditing(task)} aria-label="Editar tarefa">
+                  <Edit fontSize="small" />
+                </IconButton>
+              )}
             </ListItem>
           </Slide>
         ))}
       </List>
 
-      <TaskManagementDialog
-        tasks={tasks}
-        setTasks={setTasks}
-      />
+      <TaskManagementDialog tasks={tasks} setTasks={setTasks} />
     </Box>
   );
 };

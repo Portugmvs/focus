@@ -1,58 +1,69 @@
+// File: /src/components/TaskList/TaskManagementDialog.js
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import { v4 as uuidv4 } from 'uuid';
 import {
-  Box,
-  TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
   List,
   ListItem,
   ListItemText,
   Checkbox,
-  Typography,
-  IconButton
+  Box,
+  Typography
 } from '@mui/material';
-import { Add, Delete, CheckCircle, Edit, Task } from '@mui/icons-material'; // Import corrigido
-import TaskManagementDialog from './TaskManagementDialog'; // Caminho corrigido
+import { Delete, Close } from '@mui/icons-material';
 
-const TaskList = ({ tasks, setTasks, onTaskComplete }) => {
-  const [newTask, setNewTask] = useState('');
-  const [editingId, setEditingId] = useState(null);
-  const [editText, setEditText] = useState('');
+const TaskManagementDialog = ({ tasks, setTasks }) => {
+  const [open, setOpen] = useState(false);
 
-  const handleAddTask = () => {
-    if (newTask.trim()) {
-      setTasks([...tasks, {
-        id: uuidv4(),
-        text: newTask.trim(),
-        completed: false,
-        createdAt: new Date().toISOString()
-      }]);
-      setNewTask('');
-    }
-  };
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
 
   const handleDeleteAll = () => {
     setTasks([]);
-    setSelectedTasks([]);
-    onClose();
+    handleClose();
   };
 
-    return (
-    <Box>
-      <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Task /> {/* Agora está importado corretamente */}
-        Tarefas ({tasks.filter(t => !t.completed).length} pendentes)
-      </Typography>
-
-      {/* ... (restante do JSX) */}
+  return (
+    <Box sx={{ mt: 2 }}>
+      <Button variant="outlined" onClick={handleOpen}>
+        Gerir Tarefas
+      </Button>
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+        <DialogTitle>Gestão de Tarefas</DialogTitle>
+        <DialogContent>
+          {tasks.length === 0 ? (
+            <Typography variant="body1">Sem tarefas para gerir.</Typography>
+          ) : (
+            <List>
+              {tasks.map((task) => (
+                <ListItem key={task.id} divider>
+                  <Checkbox checked={task.completed} disabled />
+                  <ListItemText primary={task.text} />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteAll} color="error" startIcon={<Delete />}>
+            Eliminar Todas
+          </Button>
+          <Button onClick={handleClose} startIcon={<Close />}>
+            Fechar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
 
-TaskList.propTypes = {
+TaskManagementDialog.propTypes = {
   tasks: PropTypes.array.isRequired,
   setTasks: PropTypes.func.isRequired,
-  onTaskComplete: PropTypes.func.isRequired
 };
 
-export default TaskList;
+export default TaskManagementDialog;
