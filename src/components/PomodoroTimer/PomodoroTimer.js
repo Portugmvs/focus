@@ -5,81 +5,113 @@ import { Box, Typography, Button, Slider, IconButton, CircularProgress } from '@
 import { PlayArrow, Pause, Replay } from '@mui/icons-material';
 
 const PomodoroTimer = ({ onTimerComplete }) => {
-  const [minutes, setMinutes] = useState(25);
-  const [seconds, setSeconds] = useState(0);
+  const [mode, setMode] = useState('work'); // 'work' para estudo, 'break' para intervalo
+  const [originalStudyTime, setOriginalStudyTime] = useState(25); // tempo de estudo em minutos
+  const [remainingTime, setRemainingTime] = useState(25 * 60); // tempo restante em segundos
   const [isActive, setIsActive] = useState(false);
-  const [mode, setMode] = useState('work');
-  const [timeElapsed, setTimeElapsed] = useState(0);
 
+  // Função para formatar o tempo (minutos e segundos)
   const formatTime = (time) => String(time).padStart(2, '0');
-  
-  const resetTimer = () => {
-    setIsActive(false);
-    setSeconds(0);
-    setTimeElapsed(0);
+
+  // Função para tocar o som de notificação (certifica-te de que tens o ficheiro beep.mp3 na pasta public)
+  const playSound = () => {
+    const audio = new Audio('/beep.mp3');
+    audio.play();
   };
 
   useEffect(() => {
     let interval;
     if (isActive) {
       interval = setInterval(() => {
-        setTimeElapsed(prev => prev + 1);
-        setSeconds(prev => {
-          if (prev === 0) {
-            if (minutes === 0) {
-              const totalMinutes = mode === 'work' ? 25 : 5;
-              onTimerComplete(totalMinutes);
-              // Reinicia o timer com os valores do modo actual
-              setMinutes(mode === 'work' ? 25 : 5);
-              setSeconds(0);
-              setTimeElapsed(0);
-              setIsActive(false);
-              return 0;
+        setRemainingTime((prev) => {
+          if (prev <= 1) {
+            // O tempo acabou: toca o som e alterna o modo
+            playSound();
+            if (mode === 'work') {
+              // Quando acaba o estudo, chama o callback (se existir) e troca para intervalo
+              if (onTimerComplete) {
+                onTimerComplete(originalStudyTime);
+              }
+              const breakMinutes = Math.max(1, Math.round(originalStudyTime / 5));
+              setMode('break');
+              return breakMinutes * 60;
+            } else {
+              // Quando acaba o intervalo, volta para o modo estudo com o tempo original
+              setMode('work');
+              return originalStudyTime * 60;
             }
-            setMinutes(prevMin => prevMin - 1);
-            return 59;
           }
           return prev - 1;
         });
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isActive, minutes, mode, onTimerComplete]);
+  }, [isActive, mode, originalStudyTime, onTimerComplete]);
 
-  const toggleMode = () => {
+  // Inicia ou pausa o timer
+  const handleStartPause = () => {
+    setIsActive(!isActive);
+  };
+
+  // Reinicia o timer conforme o modo actual
+  const handleReset = () => {
     if (mode === 'work') {
-      setMode('break');
-      setMinutes(5);
+      setRemainingTime(originalStudyTime * 60);
     } else {
-      setMode('work');
-      setMinutes(25);
+      const breakMinutes = Math.max(1, Math.round(originalStudyTime / 5));
+      setRemainingTime(breakMinutes * 60);
     }
-    setSeconds(0);
-    setTimeElapsed(0);
     setIsActive(false);
   };
+
+  // Atualiza o tempo de estudo quando o slider é alterado (apenas no modo estudo)
+  const handleSliderChange = (e, value) => {
+    if (mode === 'work') {
+      setOriginalStudyTime(value);
+      setRemainingTime(value * 60);
+      setIsActive(false);
+    }
+  };
+
+  // Converte o tempo restante em minutos e segundos
+  const minutes = Math.floor(remainingTime / 60);
+  const seconds = remainingTime % 60;
+
+  // Define o total de segundos do ciclo actual
+  const totalSeconds =
+    mode === 'work'
+      ? originalStudyTime * 60
+      : Math.max(1, Math.round(originalStudyTime / 5)) * 60;
+  const progress = ((totalSeconds - remainingTime) / totalSeconds) * 100;
 
   return (
     <Box sx={{ textAlign: 'center' }}>
       <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         ⏱️ {mode === 'work' ? 'Tempo de Estudo' : 'Intervalo'}
       </Typography>
-      
+
       <Box sx={{ position: 'relative', display: 'inline-flex', mb: 2 }}>
         <CircularProgress
           variant="determinate"
-          value={(timeElapsed / (mode === 'work' ? 1500 : 300)) * 100}
+          value={progress}
           size={120}
           thickness={2}
-          sx={{ color: mode === 'work' ? 'primary.main' : 'secondary.main' }}
+          sx={{
+            color: mode === 'work' ? 'primary.main' : 'secondary.main',
+            '& .MuiCircularProgress-circle': {
+              transition: 'stroke-dashoffset 1s linear'
+            }
+          }}
         />
-        
-        <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)'
-        }}>
+
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)'
+          }}
+        >
           <Typography variant="h4" component="div">
             {formatTime(minutes)}:{formatTime(seconds)}
           </Typography>
@@ -90,45 +122,32 @@ const PomodoroTimer = ({ onTimerComplete }) => {
         <Button
           variant="contained"
           color={mode === 'work' ? 'primary' : 'secondary'}
-          onClick={toggleMode}
-        >
-          {mode === 'work' ? 'Intervalo Curto' : 'Modo Estudo'}
-        </Button>
-        
-        <Button
-          variant="contained"
-          onClick={() => setIsActive(!isActive)}
+          onClick={handleStartPause}
           startIcon={isActive ? <Pause /> : <PlayArrow />}
         >
           {isActive ? 'Pausar' : 'Iniciar'}
         </Button>
-        
-        <IconButton onClick={() => {
-          setMinutes(mode === 'work' ? 25 : 5);
-          resetTimer();
-        }} aria-label="Reiniciar timer">
+
+        <IconButton onClick={handleReset} aria-label="Reiniciar timer">
           <Replay />
         </IconButton>
       </Box>
 
-      <Slider
-        value={minutes}
-        min={1}
-        max={60}
-        onChange={(e, value) => {
-          setMinutes(value);
-          setSeconds(0);
-          setTimeElapsed(0);
-          setIsActive(false);
-        }}
-        sx={{ width: '80%', mx: 'auto' }}
-      />
+      {mode === 'work' && (
+        <Slider
+          value={originalStudyTime}
+          min={1}
+          max={60}
+          onChange={handleSliderChange}
+          sx={{ width: '80%', mx: 'auto' }}
+        />
+      )}
     </Box>
   );
 };
 
 PomodoroTimer.propTypes = {
-  onTimerComplete: PropTypes.func.isRequired
+  onTimerComplete: PropTypes.func
 };
 
 export default PomodoroTimer;

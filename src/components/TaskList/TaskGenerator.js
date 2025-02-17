@@ -1,3 +1,4 @@
+// File: /src/components/TaskList/TaskGenerator.js
 import React, { useState } from "react";
 import {
   TextField,
@@ -15,6 +16,11 @@ import {
   DialogActions
 } from "@mui/material";
 import { generateTasks } from "../../utils/openrouterApi";
+import { styled } from '@mui/material/styles';
+
+const StyledDialogContent = styled(DialogContent)(({ theme }) => ({
+  padding: theme.spacing(3),
+}));
 
 const TaskGenerator = ({ onAddTasks }) => {
   const [prompt, setPrompt] = useState("");
@@ -29,6 +35,7 @@ const TaskGenerator = ({ onAddTasks }) => {
     setGeneratedTasks([]);
     setSelectedTasks([]);
     setPrompt("");
+    setError(null);
     setOpen(false);
   };
 
@@ -38,6 +45,7 @@ const TaskGenerator = ({ onAddTasks }) => {
     try {
       const tasks = await generateTasks(prompt);
       setGeneratedTasks(tasks);
+      setSelectedTasks([]); // Limpa as selecções anteriores
     } catch (err) {
       setError("Erro ao gerar tarefas. Tenta novamente.");
     }
@@ -52,28 +60,42 @@ const TaskGenerator = ({ onAddTasks }) => {
     }
   };
 
+  const handleSelectAll = () => {
+    if (selectedTasks.length === generatedTasks.length) {
+      // Se todas estiverem selecionadas, desseleciona todas
+      setSelectedTasks([]);
+    } else {
+      // Senão, seleciona todas
+      setSelectedTasks([...generatedTasks]);
+    }
+  };
+
   const handleConfirm = () => {
     onAddTasks(selectedTasks);
     handleClose();
   };
 
   return (
-    <Box sx={{ mt: 2 }}>
+    <Box sx={{ mt: 2, textAlign: 'center' }}>
       <Button variant="contained" onClick={handleOpen}>
         Gerar Tarefas com AI
       </Button>
 
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-        <DialogTitle>Gerar Tarefas com AI</DialogTitle>
-        <DialogContent>
+        <DialogTitle sx={{ textAlign: 'center', fontWeight: 'bold' }}>
+          Gerar Tarefas com AI
+        </DialogTitle>
+        <StyledDialogContent>
           <TextField
             label="Tema das Tarefas"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             fullWidth
             multiline
+            rows={3}
+            sx={{ mb: 2 }}
           />
-          <Button onClick={handleGenerate} variant="contained" sx={{ mt: 2 }} disabled={!prompt.trim()}>
+          <Button onClick={handleGenerate} variant="contained" disabled={!prompt.trim()}>
             Gerar
           </Button>
 
@@ -81,18 +103,37 @@ const TaskGenerator = ({ onAddTasks }) => {
           {error && <Typography color="error" sx={{ mt: 2 }}>{error}</Typography>}
 
           {generatedTasks.length > 0 && (
-            <List sx={{ mt: 2 }}>
-              {generatedTasks.map((task, index) => (
-                <ListItem key={index} button onClick={() => toggleTaskSelection(task)}>
-                  <Checkbox checked={selectedTasks.includes(task)} />
-                  <ListItemText primary={task} />
-                </ListItem>
-              ))}
-            </List>
+            <>
+              <Button 
+                onClick={handleSelectAll} 
+                variant="outlined" 
+                sx={{ mt: 2, mb: 1 }}
+              >
+                {selectedTasks.length === generatedTasks.length ? 'Desselecionar Todas' : 'Selecionar Todas'}
+              </Button>
+              <List sx={{ mt: 1 }}>
+                {generatedTasks.map((task, index) => (
+                  <ListItem 
+                    key={index} 
+                    button 
+                    onClick={() => toggleTaskSelection(task)}
+                    sx={{
+                      borderRadius: 2,
+                      mb: 1,
+                      bgcolor: selectedTasks.includes(task) ? 'action.selected' : 'background.paper',
+                      transition: 'background-color 0.3s',
+                    }}
+                  >
+                    <Checkbox checked={selectedTasks.includes(task)} />
+                    <ListItemText primary={task} />
+                  </ListItem>
+                ))}
+              </List>
+            </>
           )}
-        </DialogContent>
+        </StyledDialogContent>
 
-        <DialogActions>
+        <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>
           <Button onClick={handleClose}>Cancelar</Button>
           <Button onClick={handleConfirm} variant="contained" disabled={selectedTasks.length === 0}>
             Adicionar Tarefas Selecionadas
