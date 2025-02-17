@@ -16,7 +16,6 @@ import {
 import { Add, CheckCircle, Edit, Task } from '@mui/icons-material';
 import TaskManagementDialog from './TaskManagementDialog.js';
 
-
 const TaskList = ({ tasks, setTasks, onTaskComplete }) => {
   const [newTask, setNewTask] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -37,17 +36,13 @@ const TaskList = ({ tasks, setTasks, onTaskComplete }) => {
     }
   };
 
-  // Só marca como concluída se ainda não estiver concluída
-  // Não permite reverter de concluída para não concluída
   const toggleTask = (taskId) => {
     const updatedTasks = tasks.map((task) => {
       if (task.id === taskId) {
-        // Se a tarefa não estiver concluída, marca como concluída e dá XP
         if (!task.completed) {
           onTaskComplete();
           return { ...task, completed: true };
         }
-        // Se já estiver concluída, não faz nada
         return task;
       }
       return task;
@@ -88,7 +83,6 @@ const TaskList = ({ tasks, setTasks, onTaskComplete }) => {
         <IconButton
           onClick={handleAddTask}
           disabled={!newTask.trim()}
-          aria-label="Adicionar tarefa"
         >
           <Add />
         </IconButton>
@@ -110,7 +104,6 @@ const TaskList = ({ tasks, setTasks, onTaskComplete }) => {
                 onChange={() => toggleTask(task.id)}
                 icon={<CheckCircle color="disabled" />}
                 checkedIcon={<CheckCircle color="success" />}
-                // Desactiva o checkbox se a tarefa já estiver concluída
                 disabled={task.completed}
               />
 
@@ -133,9 +126,8 @@ const TaskList = ({ tasks, setTasks, onTaskComplete }) => {
                 />
               )}
 
-              {/* Só exibe o ícone de edição se a tarefa não estiver concluída */}
               {!task.completed && (
-                <IconButton onClick={() => startEditing(task)} aria-label="Editar tarefa">
+                <IconButton onClick={() => startEditing(task)}>
                   <Edit fontSize="small" />
                 </IconButton>
               )}

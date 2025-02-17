@@ -45,7 +45,7 @@ const TaskGenerator = ({ onAddTasks }) => {
     try {
       const tasks = await generateTasks(prompt);
       setGeneratedTasks(tasks);
-      setSelectedTasks([]); // Limpa as selecções anteriores
+      setSelectedTasks([]);
     } catch (err) {
       setError("Erro ao gerar tarefas. Tenta novamente.");
     }
@@ -62,10 +62,8 @@ const TaskGenerator = ({ onAddTasks }) => {
 
   const handleSelectAll = () => {
     if (selectedTasks.length === generatedTasks.length) {
-      // Se todas estiverem selecionadas, desseleciona todas
       setSelectedTasks([]);
     } else {
-      // Senão, seleciona todas
       setSelectedTasks([...generatedTasks]);
     }
   };
@@ -88,6 +86,7 @@ const TaskGenerator = ({ onAddTasks }) => {
         <StyledDialogContent>
           <TextField
             label="Tema das Tarefas"
+            placeholder="Ex: Matemática do 10º ano, História da Roma Antiga"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             fullWidth
@@ -104,18 +103,18 @@ const TaskGenerator = ({ onAddTasks }) => {
 
           {generatedTasks.length > 0 && (
             <>
-              <Button 
-                onClick={handleSelectAll} 
-                variant="outlined" 
+              <Button
+                onClick={handleSelectAll}
+                variant="outlined"
                 sx={{ mt: 2, mb: 1 }}
               >
                 {selectedTasks.length === generatedTasks.length ? 'Desselecionar Todas' : 'Selecionar Todas'}
               </Button>
               <List sx={{ mt: 1 }}>
                 {generatedTasks.map((task, index) => (
-                  <ListItem 
-                    key={index} 
-                    button 
+                  <ListItem
+                    key={index}
+                    button
                     onClick={() => toggleTaskSelection(task)}
                     sx={{
                       borderRadius: 2,

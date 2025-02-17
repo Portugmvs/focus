@@ -33,7 +33,7 @@ const TaskManagementDialog = ({ tasks, setTasks }) => {
         Gerir Tarefas
       </Button>
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-        <DialogTitle>Gestão de Tarefas</DialogTitle>
+        <DialogTitle>Gerenciar Lista de Tarefas</DialogTitle>
         <DialogContent>
           {tasks.length === 0 ? (
             <Typography variant="body1">Sem tarefas para gerir.</Typography>
