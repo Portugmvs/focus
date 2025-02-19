@@ -12,122 +12,126 @@ import TaskGenerator from './components/TaskList/TaskGenerator';
 import { v4 as uuidv4 } from 'uuid';
 
 const BackgroundContainer = styled(Container)(({ theme }) => ({
-  minHeight: '100vh',
-  paddingTop: theme.spacing(4),
-  paddingBottom: theme.spacing(4),
-  background: theme.palette.mode === 'dark'
-    ? 'linear-gradient(135deg, #121212, #1e1e1e)'
-    : 'linear-gradient(135deg, #f8f9fa, #ffffff)',
+    minHeight: '100vh',
+    paddingTop: theme.spacing(4),
+    paddingBottom: theme.spacing(4),
+    background: theme.palette.mode === 'dark'
+        ? 'linear-gradient(135deg, #121212, #1e1e1e)'
+        : 'linear-gradient(135deg, #f8f9fa, #ffffff)',
 }));
 
 const themeCreator = (mode) => ({
-  palette: {
-    mode,
-    primary: { main: mode === 'dark' ? '#7c4dff' : '#3d5afe' },
-    secondary: { main: mode === 'dark' ? '#ff6d00' : '#ff9100' },
-    background: {
-      default: mode === 'dark' ? '#121212' : '#f8f9fa',
-      paper: mode === 'dark' ? '#1e1e1e' : '#ffffff'
-    }
-  },
-  typography: {
-    fontFamily: "'Inter', sans-serif",
-    h3: { fontWeight: 700 }
-  },
-  shape: { borderRadius: 12 }
+    palette: {
+        mode,
+        primary: { main: mode === 'dark' ? '#9575cd' : '#5c6bc0' }, // Cores primárias escuras e claras refinadas
+        secondary: { main: mode === 'dark' ? '#ff8a65' : '#ff7043' }, // Cores secundárias escuras e claras refinadas
+        background: {
+            default: mode === 'dark' ? '#212121' : '#f5f5f5', // Fundos escuros e claros refinados
+            paper: mode === 'dark' ? '#303030' : '#ffffff'
+        }
+    },
+    typography: {
+        fontFamily: "'Inter', sans-serif",
+        h4: { fontWeight: 700, fontSize: '2.125rem' }, // Tamanho de fonte ajustado para h4
+        h5: { fontWeight: 600, fontSize: '1.75rem' },  // Tamanho de fonte ajustado para h5
+        h6: { fontWeight: 500, fontSize: '1.25rem' },
+        body1: { fontSize: '1rem' },
+        body2: { fontSize: '0.875rem' }
+    },
+    shape: { borderRadius: 12 }
 });
 
 function App() {
-  const [themeMode, setThemeMode] = useLocalStorage('theme', 'dark');
-  const [tasks, setTasks] = useLocalStorage('tasks', []);
-  const [xpData, setXPData] = useLocalStorage('xpData', {
-    currentXP: 0,
-    totalXP: 0,
-    level: 1
-  });
-
-  const handleXPChange = (amount) => {
-    setXPData(prev => {
-      const newTotal = prev.totalXP + amount;
-      const newLevel = Math.floor(newTotal / 1000) + 1;
-      return {
-        currentXP: prev.currentXP + amount,
-        totalXP: newTotal,
-        level: newLevel
-      };
+    const [themeMode, setThemeMode] = useLocalStorage('theme', 'dark');
+    const [tasks, setTasks] = useLocalStorage('tasks', []);
+    const [xpData, setXPData] = useLocalStorage('xpData', {
+        currentXP: 0,
+        totalXP: 0,
+        level: 1
     });
-  };
 
-  // Função para adicionar tarefas geradas
-  const handleAddGeneratedTasks = (generatedTasks) => {
-    const tasksToAdd = generatedTasks.map(taskText => ({
-      id: uuidv4(),
-      text: taskText,
-      completed: false,
-      createdAt: new Date().toISOString()
-    }));
-    setTasks([...tasks, ...tasksToAdd]);
-  };
+    const handleXPChange = (amount) => {
+        setXPData(prev => {
+            const newTotal = prev.totalXP + amount;
+            const newLevel = Math.floor(newTotal / 1000) + 1;
+            return {
+                currentXP: prev.currentXP + amount,
+                totalXP: newTotal,
+                level: newLevel
+            };
+        });
+    };
 
-  const theme = createTheme(themeCreator(themeMode));
+    // Função para adicionar tarefas geradas
+    const handleAddGeneratedTasks = (generatedTasks) => {
+        const tasksToAdd = generatedTasks.map(taskText => ({
+            id: uuidv4(),
+            text: taskText,
+            completed: false,
+            createdAt: new Date().toISOString()
+        }));
+        setTasks([...tasks, ...tasksToAdd]);
+    };
 
-  return (
-    <HistoryProvider>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <BackgroundContainer maxWidth="lg">
-          <Paper 
-            elevation={6} 
-            sx={{ 
-              p: 4, 
-              borderRadius: 3, 
-              background: themeMode === 'dark' 
-                ? 'linear-gradient(135deg, #1e1e1e, #121212)' 
-                : 'linear-gradient(135deg, #ffffff, #f0f0f0)' 
-            }}
-          >
-            {/* Cabeçalho */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-              <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center' }}>
-                <School sx={{ mr: 1, fontSize: 40 }} />
-                Pomodoro App
-              </Typography>
-              <IconButton
-                onClick={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
-                color="inherit"
-              >
-                {themeMode === 'dark' ? <Brightness7 /> : <Brightness4 />}
-              </IconButton>
-            </Box>
+    const theme = createTheme(themeCreator(themeMode));
 
-            {/* Sistema de XP */}
-            <XPSystem xpData={xpData} />
+    return (
+        <HistoryProvider>
+            <ThemeProvider theme={theme}>
+                <CssBaseline />
+                <BackgroundContainer maxWidth="lg">
+                    <Paper
+                        elevation={6}
+                        sx={{
+                            p: 4,
+                            borderRadius: 3,
+                            background: themeMode === 'dark'
+                                ? 'linear-gradient(135deg, #1e1e1e, #121212)'
+                                : 'linear-gradient(135deg, #ffffff, #f0f0f0)'
+                        }}
+                    >
+                        {/* Cabeçalho */}
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+                            <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center' }}>
+                                <School sx={{ mr: 1, fontSize: 40 }} />
+                                Pomodoro App
+                            </Typography>
+                            <IconButton
+                                onClick={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
+                                color="inherit"
+                            >
+                                {themeMode === 'dark' ? <Brightness7 /> : <Brightness4 />}
+                            </IconButton>
+                        </Box>
 
-            <Grid container spacing={4}>
-              {/* Temporizador de Pomodoro */}
-              <Grid item xs={12} md={6}>
-                <PomodoroTimer onTimerComplete={(minutes) => handleXPChange(minutes * 10)} />
-              </Grid>
+                        {/* Sistema de XP */}
+                        <XPSystem xpData={xpData} />
 
-              {/* Lista de Tarefas */}
-              <Grid item xs={12} md={6}>
-                <TaskList
-                  tasks={tasks}
-                  setTasks={setTasks}
-                  onTaskComplete={() => handleXPChange(50)}
-                />
-              </Grid>
+                        <Grid container spacing={4} sx={{ display: 'flex' }}> {/* Garante layout horizontal */}
+                            {/* Temporizador de Pomodoro */}
+                            <Grid item xs={12} md={6}>
+                                <PomodoroTimer onTimerComplete={(minutes) => handleXPChange(minutes * 10)} />
+                            </Grid>
 
-              {/* Criação de Tarefas com IA */}
-              <Grid item xs={12}>
-                <TaskGenerator onAddTasks={handleAddGeneratedTasks} />
-              </Grid>
-            </Grid>
-          </Paper>
-        </BackgroundContainer>
-      </ThemeProvider>
-    </HistoryProvider>
-  );
+                            {/* Lista de Tarefas */}
+                            <Grid item xs={12} md={6}>
+                                <TaskList
+                                    tasks={tasks}
+                                    setTasks={setTasks}
+                                    onTaskComplete={() => handleXPChange(50)}
+                                />
+                            </Grid>
+
+                            {/* Criação de Tarefas com IA */}
+                            <Grid item xs={12}>
+                                <TaskGenerator onAddTasks={handleAddGeneratedTasks} />
+                            </Grid>
+                        </Grid>
+                    </Paper>
+                </BackgroundContainer>
+            </ThemeProvider>
+        </HistoryProvider>
+    );
 }
 
 export default App;
