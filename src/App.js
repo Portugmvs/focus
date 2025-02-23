@@ -1,168 +1,137 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Grid, Typography, CssBaseline, Paper, IconButton, Box } from '@mui/material';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
-import TaskList from './components/TaskList';
-import Timer from './components/Timer';
-import XPProgress from './components/XPProgress';
+// File: /src/App.js
+import React from 'react';
+import { Container, Grid, CssBaseline, Paper, IconButton, Box, Typography } from '@mui/material';
+import { ThemeProvider, createTheme, styled } from '@mui/material/styles';
+import { Brightness4, Brightness7, School } from '@mui/icons-material';
+import { useLocalStorage } from './hooks/useLocalStorage';
+import { HistoryProvider } from './contexts/HistoryContext';
+import TaskList from './components/TaskList/TaskList';
+import PomodoroTimer from './components/PomodoroTimer/PomodoroTimer';
+import XPSystem from './components/XPSystem/XPSystem';
+import TaskGenerator from './components/TaskList/TaskGenerator';
+import { v4 as uuidv4 } from 'uuid';
 
-// Hook para gerir a persistência no localStorage
-function useLocalStorage(key, initialValue) {
-  const [storedValue, setStoredValue] = useState(() => {
-    try {
-      const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (err) {
-      console.error('Erro ao ler do localStorage:', err);
-      return initialValue;
-    }
-  });
+const BackgroundContainer = styled(Container)(({ theme }) => ({
+    minHeight: '100vh',
+    paddingTop: theme.spacing(4),
+    paddingBottom: theme.spacing(4),
+    background: theme.palette.mode === 'dark'
+        ? 'linear-gradient(135deg, #121212, #1e1e1e)'
+        : 'linear-gradient(135deg, #f8f9fa, #ffffff)',
+}));
 
-  const setValue = (value) => {
-    try {
-      setStoredValue(value);
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch (err) {
-      console.error('Erro ao guardar no localStorage:', err);
-    }
-  };
-
-  return [storedValue, setValue];
-}
-
-const getDesignTokens = (mode) => ({
-  palette: {
-    mode,
-    primary: {
-      main: mode === 'dark' ? '#90caf9' : '#1976d2',
+const themeCreator = (mode) => ({
+    palette: {
+        mode,
+        primary: { main: mode === 'dark' ? '#9575cd' : '#5c6bc0' }, // Cores primárias escuras e claras refinadas
+        secondary: { main: mode === 'dark' ? '#ff8a65' : '#ff7043' }, // Cores secundárias escuras e claras refinadas
+        background: {
+            default: mode === 'dark' ? '#212121' : '#f5f5f5', // Fundos escuros e claros refinados
+            paper: mode === 'dark' ? '#303030' : '#ffffff'
+        }
     },
-    secondary: {
-      main: mode === 'dark' ? '#f48fb1' : '#d81b60',
+    typography: {
+        fontFamily: "'Inter', sans-serif",
+        h4: { fontWeight: 700, fontSize: '2.125rem' }, // Tamanho de fonte ajustado para h4
+        h5: { fontWeight: 600, fontSize: '1.75rem' },  // Tamanho de fonte ajustado para h5
+        h6: { fontWeight: 500, fontSize: '1.25rem' },
+        body1: { fontSize: '1rem' },
+        body2: { fontSize: '0.875rem' }
     },
-    error: {
-      main: '#ff1744',
-    },
-    background: {
-      default: mode === 'dark' ? '#121212' : '#f5f5f5',
-      paper: mode === 'dark' ? '#1e1e1e' : '#ffffff',
-    },
-    text: {
-      primary: mode === 'dark' ? '#ffffff' : '#000000',
-      secondary: mode === 'dark' ? '#b3b3b3' : '#4f4f4f',
-    },
-    action: {
-      active: mode === 'dark' ? '#fff' : '#000',
-      disabled: mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.26)',
-    },
-    divider: mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
-  },
-  components: {
-    MuiIconButton: {
-      styleOverrides: {
-        root: {
-          '&:hover': {
-            backgroundColor: 'transparent',
-          },
-        },
-      },
-    },
-  },
+    shape: { borderRadius: 12 }
 });
 
 function App() {
-  // Utilizamos o hook para gerir os dados de estudo, que incluem o xp_total e o histórico
-  const [studyData, setStudyData] = useLocalStorage('studyData', { xp_total: 0, historico: [] });
-  // O estado xp é derivado dos dados de estudo
-  const [xp, setXP] = useState(studyData.xp_total);
-  const [tasks, setTasks] = useState([]);
-  const [themeMode, setThemeMode] = useState('dark');
+    const [themeMode, setThemeMode] = useLocalStorage('theme', 'dark');
+    const [tasks, setTasks] = useLocalStorage('tasks', []);
+    const [xpData, setXPData] = useLocalStorage('xpData', {
+        currentXP: 0,
+        totalXP: 0,
+        level: 1
+    });
 
-  // Actualiza o estado xp sempre que o studyData mudar
-  useEffect(() => {
-    setXP(studyData.xp_total);
-  }, [studyData]);
+    const handleXPChange = (amount) => {
+        setXPData(prev => {
+            const newTotal = prev.totalXP + amount;
+            const newLevel = Math.floor(newTotal / 1000) + 1;
+            return {
+                currentXP: prev.currentXP + amount,
+                totalXP: newTotal,
+                level: newLevel
+            };
+        });
+    };
 
-  useEffect(() => {
-    // Carregar tasks guardadas, se existirem
-    const savedTasks = localStorage.getItem('tasks');
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
-    }
-    // Carregar o tema guardado
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme && ['dark', 'light'].includes(savedTheme)) {
-      setThemeMode(savedTheme);
-    }
-  }, []);
+    // Função para adicionar tarefas geradas
+    const handleAddGeneratedTasks = (generatedTasks) => {
+        const tasksToAdd = generatedTasks.map(taskText => ({
+            id: uuidv4(),
+            text: taskText,
+            completed: false,
+            createdAt: new Date().toISOString()
+        }));
+        setTasks([...tasks, ...tasksToAdd]);
+    };
 
-  useEffect(() => {
-    // Guardar tasks no localStorage sempre que mudarem
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-  }, [tasks]);
+    const theme = createTheme(themeCreator(themeMode));
 
-  const theme = createTheme(getDesignTokens(themeMode));
+    return (
+        <HistoryProvider>
+            <ThemeProvider theme={theme}>
+                <CssBaseline />
+                <BackgroundContainer maxWidth="lg">
+                    <Paper
+                        elevation={6}
+                        sx={{
+                            p: 4,
+                            borderRadius: 3,
+                            background: themeMode === 'dark'
+                                ? 'linear-gradient(135deg, #1e1e1e, #121212)'
+                                : 'linear-gradient(135deg, #ffffff, #f0f0f0)'
+                        }}
+                    >
+                        {/* Cabeçalho */}
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+                            <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center' }}>
+                                <School sx={{ mr: 1, fontSize: 40 }} />
+                                Pomodoro App
+                            </Typography>
+                            <IconButton
+                                onClick={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
+                                color="inherit"
+                            >
+                                {themeMode === 'dark' ? <Brightness7 /> : <Brightness4 />}
+                            </IconButton>
+                        </Box>
 
-  const toggleTheme = () => {
-    const newTheme = themeMode === 'dark' ? 'light' : 'dark';
-    setThemeMode(newTheme);
-    localStorage.setItem('theme', newTheme);
-  };
+                        {/* Sistema de XP */}
+                        <XPSystem xpData={xpData} />
 
-  const handleStudyComplete = (elapsedMinutes) => {
-    const xpGanho = Math.floor(elapsedMinutes / 5) * 20;
-    if (xpGanho > 0) {
-      // Cria uma cópia dos dados actuais e actualiza o xp_total e o histórico
-      const newStudyData = { ...studyData };
-      newStudyData.xp_total += xpGanho;
-      newStudyData.historico = [
-        ...newStudyData.historico,
-        {
-          data: new Date().toISOString(),
-          descricao: `Estudo de ${elapsedMinutes} minutos`,
-          xp: xpGanho
-        }
-      ];
-      // Atualiza os dados de estudo, o que irá guardar automaticamente no localStorage
-      setStudyData(newStudyData);
-      setXP(newStudyData.xp_total);
-    }
-  };
+                        <Grid container spacing={4} sx={{ display: 'flex' }}> {/* Garante layout horizontal */}
+                            {/* Temporizador de Pomodoro */}
+                            <Grid item xs={12} md={6}>
+                                <PomodoroTimer onTimerComplete={(minutes) => handleXPChange(minutes * 10)} />
+                            </Grid>
 
-  
+                            {/* Lista de Tarefas */}
+                            <Grid item xs={12} md={6}>
+                                <TaskList
+                                    tasks={tasks}
+                                    setTasks={setTasks}
+                                    onTaskComplete={() => handleXPChange(50)}
+                                />
+                            </Grid>
 
-  return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Paper elevation={3} sx={{ p: 3 }}>
-          <Box sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mb: 4
-          }}>
-            <Typography variant="h3" color="primary">
-              🚀 Study XP
-            </Typography>
-            <IconButton onClick={toggleTheme} color="inherit">
-              {themeMode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-            </IconButton>
-          </Box>
-
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <TaskList tasks={tasks} setTasks={setTasks} xp={xp} setXP={setXP} />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Timer onStudyComplete={handleStudyComplete} />
-              <XPProgress xp={xp} />
-            </Grid>
-          </Grid>
-        </Paper>
-      </Container>
-    </ThemeProvider>
-  );
+                            {/* Criação de Tarefas com IA */}
+                            <Grid item xs={12}>
+                                <TaskGenerator onAddTasks={handleAddGeneratedTasks} />
+                            </Grid>
+                        </Grid>
+                    </Paper>
+                </BackgroundContainer>
+            </ThemeProvider>
+        </HistoryProvider>
+    );
 }
 
 export default App;
